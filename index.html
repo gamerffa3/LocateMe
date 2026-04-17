@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LocateMe - Track Your Phone</title>
+    <title>LocateMe - Control Your Phone</title>
     <style>
         * {
             margin: 0;
@@ -20,6 +20,7 @@
             margin: 0 auto;
             padding: 20px;
         }
+        /* Login Container */
         .login-container {
             background: white;
             border-radius: 20px;
@@ -65,6 +66,7 @@
         }
         button:hover {
             background: #1976D2;
+            transform: scale(1.02);
         }
         .error {
             color: red;
@@ -74,9 +76,11 @@
             background: #ffebee;
             border-radius: 8px;
         }
+        /* Dashboard */
         .dashboard {
             display: none;
         }
+        /* Header */
         .header {
             background: white;
             border-radius: 15px;
@@ -102,56 +106,81 @@
             0% { opacity: 0.6; }
             100% { opacity: 1; }
         }
+        /* Info Card */
         .info-card {
             background: white;
             border-radius: 15px;
-            padding: 25px;
+            padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        .location-grid {
+        .location-details {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
-        .location-card {
+        .detail-item {
             background: #f8f9fa;
-            padding: 15px;
-            border-radius: 12px;
+            padding: 12px;
+            border-radius: 10px;
             text-align: center;
         }
-        .location-card .label {
-            font-size: 12px;
+        .detail-label {
+            font-size: 11px;
             color: #666;
             margin-bottom: 5px;
         }
-        .location-card .value {
-            font-size: 18px;
+        .detail-value {
+            font-size: 16px;
             font-weight: bold;
             color: #333;
         }
+        /* Map */
         #map {
-            height: 400px;
+            height: 300px;
             border-radius: 12px;
             margin-top: 20px;
         }
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            flex-wrap: wrap;
+        /* Control Buttons */
+        .controls-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        .btn-refresh {
-            background: #4CAF50;
-            width: auto;
-            padding: 10px 20px;
+        .controls-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
         }
-        .btn-logout {
-            background: #f44336;
-            width: auto;
-            padding: 10px 20px;
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
         }
+        .cmd-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .cmd-btn:hover {
+            transform: scale(1.05);
+        }
+        .btn-lock { background: #FF9800; color: white; }
+        .btn-alarm { background: #F44336; color: white; }
+        .btn-stop { background: #9E9E9E; color: white; }
+        .btn-location { background: #4CAF50; color: white; }
+        .btn-camera { background: #673AB7; color: white; }
+        .btn-sos { background: #E91E63; color: white; }
+        .btn-factory { background: #000; color: white; }
+        /* Status */
         .status {
             padding: 12px;
             border-radius: 10px;
@@ -171,31 +200,16 @@
             gap: 10px;
             margin-top: 15px;
         }
+        .refresh-btn, .logout-btn {
+            width: auto;
+            padding: 10px 20px;
+        }
+        .refresh-btn { background: #4CAF50; }
+        .logout-btn { background: #f44336; }
         @media (max-width: 768px) {
-            .login-container {
-                margin: 40px 15px;
-                padding: 25px;
+            .button-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
-            #map {
-                height: 300px;
-            }
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
-        }
-        .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #2196F3;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -205,63 +219,83 @@
     <!-- Login Section -->
     <div id="loginSection" class="login-container">
         <h2>🔒 LocateMe</h2>
-        <p>Track your lost phone in real-time</p>
+        <p>Control your phone remotely</p>
         <input type="text" id="username" placeholder="Username">
-        <input type="password" id="pin" placeholder="4-6 Digit PIN" maxlength="6">
-        <button onclick="login()">📍 Find My Phone</button>
+        <input type="password" id="pin" placeholder="PIN" maxlength="6">
+        <button onclick="login()">🎮 Control Phone</button>
         <div id="loginError" class="error" style="display:none;"></div>
     </div>
 
     <!-- Dashboard Section -->
     <div id="dashboardSection" class="dashboard">
         <div class="header">
-            <h2>📍 LocateMe Tracker</h2>
+            <h2>📍 LocateMe Control</h2>
             <span class="live-badge">● LIVE</span>
         </div>
+
+        <!-- Location Info -->
         <div class="info-card">
             <h3>📱 Device Location</h3>
-            <div class="location-grid">
-                <div class="location-card">
-                    <div class="label">Username</div>
-                    <div class="value" id="displayUsername">-</div>
+            <div class="location-details">
+                <div class="detail-item">
+                    <div class="detail-label">Username</div>
+                    <div class="detail-value" id="displayUsername">-</div>
                 </div>
-                <div class="location-card">
-                    <div class="label">Latitude</div>
-                    <div class="value" id="displayLat">-</div>
+                <div class="detail-item">
+                    <div class="detail-label">Latitude</div>
+                    <div class="detail-value" id="displayLat">-</div>
                 </div>
-                <div class="location-card">
-                    <div class="label">Longitude</div>
-                    <div class="value" id="displayLng">-</div>
+                <div class="detail-item">
+                    <div class="detail-label">Longitude</div>
+                    <div class="detail-value" id="displayLng">-</div>
                 </div>
-                <div class="location-card">
-                    <div class="label">Last Updated</div>
-                    <div class="value" id="displayTime">-</div>
+                <div class="detail-item">
+                    <div class="detail-label">Last Updated</div>
+                    <div class="detail-value" id="displayTime">-</div>
                 </div>
             </div>
             <div id="map"></div>
-            <div class="controls">
-                <button class="btn-refresh" onclick="fetchLocation()">🔄 Refresh Now</button>
-                <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="controls-section">
+            <div class="controls-title">🎮 Remote Controls</div>
+            <div class="button-grid">
+                <button class="cmd-btn btn-lock" onclick="sendCommand('lock')">🔒 Lock Phone</button>
+                <button class="cmd-btn btn-alarm" onclick="sendCommand('alarm')">🔊 Play Alarm</button>
+                <button class="cmd-btn btn-stop" onclick="sendCommand('stop')">🔇 Stop Alarm</button>
+                <button class="cmd-btn btn-location" onclick="fetchLocation()">📍 Get Location</button>
+                <button class="cmd-btn btn-camera" onclick="sendCommand('camera')">📸 Open Camera</button>
+                <button class="cmd-btn btn-sos" onclick="sendCommand('sos')">🆘 SOS Alert</button>
+                <button class="cmd-btn btn-factory" onclick="sendCommand('factory')">⚠️ Factory Reset</button>
             </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-section">
+            <div class="controls-title">⚙️ Settings</div>
             <div class="auto-refresh">
                 <input type="checkbox" id="autoRefresh" checked>
-                <label>Auto refresh every 5 seconds</label>
+                <label>Auto refresh location (5 sec)</label>
             </div>
-            <div id="statusMessage" class="status online">✅ Connected - Waiting for location data</div>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="refresh-btn" onclick="fetchLocation()">🔄 Refresh Now</button>
+                <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+            </div>
+            <div id="statusMessage" class="status online">✅ Connected - Ready to control</div>
         </div>
     </div>
 </div>
 
-<!-- Firebase SDKs -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-<!-- Google Maps API - NOTE: You need to add your own API key -->
-<!-- Get free API key from: https://console.cloud.google.com -->
+<!-- Google Maps API - Add your API key -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE"></script>
+
 <script>
-    // ============================================
-    // 🔥 FIREBASE CONFIGURATION - YOUR DATA
-    // ============================================
+    // Firebase Configuration
     const firebaseConfig = {
         apiKey: "AIzaSyDJLDWlFVTJmvlirJSbFwVNq5oDFOt909Y",
         authDomain: "locateme-448db.firebaseapp.com",
@@ -269,49 +303,25 @@
         projectId: "locateme-448db",
         storageBucket: "locateme-448db.firebasestorage.app",
         messagingSenderId: "925140869620",
-        appId: "1:925140869620:web:f4038374a0c8ad706ed9a1",
-        measurementId: "G-6KQQ3NG32X"
+        appId: "1:925140869620:web:f4038374a0c8ad706ed9a1"
     };
 
-    // Initialize Firebase
-    let database;
-    try {
-        firebase.initializeApp(firebaseConfig);
-        database = firebase.database();
-        console.log("✅ Firebase connected successfully!");
-    } catch (error) {
-        console.error("❌ Firebase initialization error:", error);
-    }
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
 
-    // Global variables
-    let map = null;
-    let marker = null;
-    let refreshInterval = null;
-    let currentUsername = "";
+    let map, marker, refreshInterval, currentUsername = "";
 
-    // ============================================
-    // LOGIN FUNCTION
-    // ============================================
     async function login() {
         const username = document.getElementById('username').value.trim();
         const pin = document.getElementById('pin').value.trim();
         const errorDiv = document.getElementById('loginError');
 
         if (!username || !pin) {
-            errorDiv.style.display = "block";
-            errorDiv.innerHTML = "❌ Please enter username and PIN";
+            showError("Please enter username and PIN");
             return;
         }
 
-        if (!database) {
-            errorDiv.style.display = "block";
-            errorDiv.innerHTML = "❌ Firebase not connected. Please check your internet connection.";
-            return;
-        }
-
-        errorDiv.style.display = "block";
-        errorDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Verifying...</p></div>';
-        errorDiv.style.textAlign = "center";
+        showError("Verifying...");
 
         try {
             const snapshot = await database.ref('users/' + username).once('value');
@@ -322,157 +332,109 @@
                 document.getElementById('displayUsername').innerHTML = username;
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('dashboardSection').style.display = 'block';
-                
                 initMap();
                 await fetchLocation();
                 startAutoRefresh();
-                
-                errorDiv.style.display = "none";
+                showError("", false);
             } else {
-                errorDiv.style.display = "block";
-                errorDiv.innerHTML = "❌ Invalid username or PIN";
-                errorDiv.style.textAlign = "center";
+                showError("Invalid username or PIN");
             }
         } catch (error) {
-            console.error("Login error:", error);
-            errorDiv.style.display = "block";
-            errorDiv.innerHTML = "❌ Connection error: " + error.message;
-            errorDiv.style.textAlign = "center";
+            showError("Connection error: " + error.message);
         }
     }
 
-    // ============================================
-    // MAP FUNCTIONS
-    // ============================================
+    function showError(msg, show = true) {
+        const errorDiv = document.getElementById('loginError');
+        if (show && msg) {
+            errorDiv.style.display = "block";
+            errorDiv.innerHTML = msg;
+        } else {
+            errorDiv.style.display = "none";
+        }
+    }
+
     function initMap() {
-        const defaultLocation = { lat: 28.6139, lng: 77.2090 };
-        
-        // Check if Google Maps is loaded
+        const defaultLoc = { lat: 28.6139, lng: 77.2090 };
         if (typeof google === 'undefined') {
-            console.log("Waiting for Google Maps to load...");
             setTimeout(initMap, 500);
             return;
         }
-        
         map = new google.maps.Map(document.getElementById('map'), {
-            center: defaultLocation,
-            zoom: 15,
-            zoomControl: true,
-            mapTypeControl: false
+            center: defaultLoc,
+            zoom: 15
         });
-        
         marker = new google.maps.Marker({
-            position: defaultLocation,
+            position: defaultLoc,
             map: map,
-            title: 'Your Device',
-            icon: {
-                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                scaledSize: new google.maps.Size(40, 40)
-            }
+            icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
         });
     }
 
-    // ============================================
-    // FETCH LOCATION FROM FIREBASE
-    // ============================================
     async function fetchLocation() {
-        if (!currentUsername || !database) return;
-
+        if (!currentUsername) return;
         try {
             const snapshot = await database.ref('users/' + currentUsername).once('value');
-            const userData = snapshot.val();
-
-            if (userData && userData.lat && userData.lng) {
-                const lat = userData.lat;
-                const lng = userData.lng;
-                const lastUpdate = userData.lastUpdate;
-
-                document.getElementById('displayLat').innerHTML = lat.toFixed(6);
-                document.getElementById('displayLng').innerHTML = lng.toFixed(6);
-                
-                if (lastUpdate) {
-                    const date = new Date(lastUpdate);
-                    document.getElementById('displayTime').innerHTML = date.toLocaleString('en-IN');
-                    
-                    const minutesAgo = (Date.now() - lastUpdate) / 60000;
-                    const statusDiv = document.getElementById('statusMessage');
-                    
-                    if (minutesAgo < 1) {
-                        statusDiv.className = 'status online';
-                        statusDiv.innerHTML = `✅ Online - Location updated ${Math.floor(minutesAgo * 60)} seconds ago`;
-                    } else if (minutesAgo < 5) {
-                        statusDiv.className = 'status online';
-                        statusDiv.innerHTML = `⚠️ Last update ${Math.floor(minutesAgo)} minutes ago`;
-                    } else {
-                        statusDiv.className = 'status offline';
-                        statusDiv.innerHTML = `❌ Offline - No update for ${Math.floor(minutesAgo)} minutes`;
-                    }
+            const data = snapshot.val();
+            if (data && data.lat && data.lng) {
+                document.getElementById('displayLat').innerHTML = data.lat.toFixed(6);
+                document.getElementById('displayLng').innerHTML = data.lng.toFixed(6);
+                if (data.lastUpdate) {
+                    document.getElementById('displayTime').innerHTML = new Date(data.lastUpdate).toLocaleString();
                 }
-
+                const pos = { lat: data.lat, lng: data.lng };
                 if (map && marker) {
-                    const location = { lat: lat, lng: lng };
-                    map.setCenter(location);
-                    marker.setPosition(location);
-                    
-                    marker.setAnimation(google.maps.Animation.BOUNCE);
-                    setTimeout(() => marker.setAnimation(null), 1000);
+                    map.setCenter(pos);
+                    marker.setPosition(pos);
                 }
-            } else {
-                document.getElementById('statusMessage').className = 'status offline';
-                document.getElementById('statusMessage').innerHTML = '⚠️ Waiting for location data from device...';
+                document.getElementById('statusMessage').className = 'status online';
+                document.getElementById('statusMessage').innerHTML = '✅ Online - Location updated';
             }
         } catch (error) {
-            console.error('Fetch error:', error);
-            document.getElementById('statusMessage').className = 'status offline';
-            document.getElementById('statusMessage').innerHTML = '❌ Error fetching data';
+            document.getElementById('statusMessage').innerHTML = '❌ Error fetching location';
         }
     }
 
-    // ============================================
-    // AUTO REFRESH
-    // ============================================
+    async function sendCommand(command) {
+        if (!currentUsername) return;
+        try {
+            await database.ref('users/' + currentUsername + '/command').set(command);
+            showToast(command + ' command sent!');
+            document.getElementById('statusMessage').innerHTML = `✅ ${command} command sent to phone`;
+            setTimeout(() => {
+                document.getElementById('statusMessage').innerHTML = '✅ Connected - Ready to control';
+            }, 2000);
+        } catch (error) {
+            showToast('Error: ' + error.message);
+        }
+    }
+
+    function showToast(msg) {
+        const statusDiv = document.getElementById('statusMessage');
+        statusDiv.innerHTML = msg;
+        setTimeout(() => {
+            if (currentUsername) {
+                statusDiv.innerHTML = '✅ Connected - Ready to control';
+            }
+        }, 3000);
+    }
+
     function startAutoRefresh() {
         if (refreshInterval) clearInterval(refreshInterval);
-        
         refreshInterval = setInterval(() => {
-            const autoRefresh = document.getElementById('autoRefresh');
-            if (autoRefresh && autoRefresh.checked) {
-                fetchLocation();
-            }
+            if (document.getElementById('autoRefresh').checked) fetchLocation();
         }, 5000);
     }
 
-    // ============================================
-    // LOGOUT FUNCTION
-    // ============================================
     function logout() {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-            refreshInterval = null;
-        }
-        
+        if (refreshInterval) clearInterval(refreshInterval);
         currentUsername = "";
         document.getElementById('loginSection').style.display = 'block';
         document.getElementById('dashboardSection').style.display = 'none';
         document.getElementById('username').value = "";
         document.getElementById('pin').value = "";
-        document.getElementById('loginError').style.display = "none";
     }
-
-    // Check if everything is loaded
-    window.addEventListener('load', function() {
-        console.log("✅ Website loaded successfully");
-        if (database) {
-            console.log("✅ Firebase is ready");
-        } else {
-            console.log("❌ Firebase not initialized");
-        }
-    });
 </script>
-
-<!-- Google Maps API - You need to add your API key here -->
-<!-- Get free API key from: https://console.cloud.google.com -->
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE"></script>
 
 </body>
 </html>
