@@ -1,1 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>LocateMe - Track Your Phone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Login Container */
+        .login-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            margin: 80px auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-container h2 {
+            text-align: center;
+            color: #2196F3;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .login-container p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: #2196F3;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(33,150,243,0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            background: #1976D2;
+            transform: scale(1.02);
+        }
+
+        .error {
+            color: #f44336;
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: #ffebee;
+            border-radius: 8px;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h2 {
+            color: #2196F3;
+            font-size: 24px;
+        }
+
+        .live-badge {
+            background: #ff4444;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: bold;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Info Card */
+        .info-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .info-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        /* Location Details Grid */
+        .location-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .location-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .location-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .location-card .label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .location-card .value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .location-card .value.lat {
+            color: #4CAF50;
+        }
+
+        .location-card .value.lng {
+            color: #FF9800;
+        }
+
+        /* Map Container */
+        #map {
+            height: 400px;
+            border-radius: 12px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-refresh {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-refresh:hover {
+            background: #45a049;
+            transform: scale(1.02);
+        }
+
+        .btn-logout {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-logout:hover {
+            background: #da190b;
+            transform: scale(1.02);
+        }
+
+        /* Status Message */
+        .status {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 14px;
+        }
+
+        .status.online {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .status.offline {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #f44336;
+        }
+
+        /* Auto Refresh Checkbox */
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .auto-refresh input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .auto-refresh label {
+            cursor: pointer;
+            color: #555;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2196F3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            .login-container {
+                margin: 40px 15px;
+                padding: 25px;
+            }
+            .location-grid {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            #map {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Login Section -->
+    <div id="loginSection" class="login-container">
+        <h2>🔒 LocateMe</h2>
+        <p>Track your lost phone in real-time</p>
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Username" autocomplete="off">
+        </div>
+        <div class="input-group">
+            <input type="password" id="pin" placeholder="4-6 Digit PIN" maxlength="6">
+        </div>
+        <button class="login-btn" onclick="login()">📍 Find My Phone</button>
+        <div id="loginError" class="error" style="display:none;"></div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="dashboard">
+        <div class="header">
+            <h2>📍 LocateMe Tracker</h2>
+            <span class="live-badge">● LIVE TRACKING</span>
+        </div>
+
+        <div class="info-card">
+            <h3>📱 Device Location</h3>
+            <div class="location-grid">
+                <div class="location-card">
+                    <div class="label">Username</div>
+                    <div class="value" id="displayUsername">-</div>
+                </div>
+                <div class="location-card">
+                    <div class="label">Latitude</div>
+                    <div class="value lat" id="displayLat">-</div>
+                </div>
+                <div class="location-card">
+                    <div class="label">Longitude</div>
+                    <div class="value lng" id="displayLng">-</div>
+                </div>
+                <div class="location-card">
+                    <div class="label">Last Updated</div>
+                    <div class="value" id="displayTime">-</div>
+                </div>
+            </div>
+
+            <!-- Google Map -->
+            <div id="map"></div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button class="btn btn-refresh" onclick="fetchLocation()">🔄 Refresh Now</button>
+                <button class="btn btn-logout" onclick="logout()">🚪 Logout</button>
+            </div>
+
+            <div class="auto-refresh">
+                <input type="checkbox" id="autoRefresh" checked>
+                <label for="autoRefresh">Auto refresh every 5 seconds</label>
+            </div>
+
+            <div id="statusMessage" class="status online">
+                ✅ Connected - Waiting for location data
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY_HERE"></script>
+
+<script>
+    // ============================================
+    // 🔥 FIREBASE CONFIGURATION - REPLACE WITH YOURS
+    // ============================================
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY_HERE",
+        authDomain: "YOUR_AUTH_DOMAIN_HERE",
+        databaseURL: "YOUR_DATABASE_URL_HERE",
+        projectId: "YOUR_PROJECT_ID_HERE",
+        storageBucket: "YOUR_STORAGE_BUCKET_HERE",
+        messagingSenderId: "YOUR_MESSAGING_SENDER_ID_HERE",
+        appId: "YOUR_APP_ID_HERE"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // Global variables
+    let map = null;
+    let marker = null;
+    let accuracyCircle = null;
+    let refreshInterval = null;
+    let currentUsername = "";
+
+    // ============================================
+    // LOGIN FUNCTION
+    // ============================================
+    async function login() {
+        const username = document.getElementById('username').value.trim();
+        const pin = document.getElementById('pin').value.trim();
+        const errorDiv = document.getElementById('loginError');
+
+        if (!username) {
+            showError("Please enter username");
+            return;
+        }
+        if (!pin || pin.length < 4) {
+            showError("Please enter 4-6 digit PIN");
+            return;
+        }
+
+        showError("", false);
+        errorDiv.style.display = "block";
+        errorDiv.innerHTML = '<div class="spinner"></div><p>Verifying...</p>';
+        errorDiv.style.textAlign = "center";
+
+        try {
+            const snapshot = await database.ref('users/' + username).once('value');
+            const userData = snapshot.val();
+
+            if (userData && userData.pin === pin) {
+                // Login success
+                currentUsername = username;
+                document.getElementById('displayUsername').innerText = username;
+                
+                // Hide login, show dashboard
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('dashboardSection').style.display = 'block';
+                
+                // Initialize map
+                initMap();
+                
+                // Fetch first location
+                await fetchLocation();
+                
+                // Start auto refresh
+                startAutoRefresh();
+                
+                errorDiv.style.display = "none";
+            } else {
+                showError("❌ Invalid username or PIN");
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            showError("❌ Connection error: " + error.message);
+        }
+    }
+
+    function showError(message, show = true) {
+        const errorDiv = document.getElementById('loginError');
+        if (show && message) {
+            errorDiv.style.display = "block";
+            errorDiv.innerHTML = message;
+            errorDiv.style.textAlign = "center";
+        } else {
+            errorDiv.style.display = "none";
+        }
+    }
+
+    // ============================================
+    // MAP FUNCTIONS
+    // ============================================
+    function initMap() {
+        const defaultLocation = { lat: 28.6139, lng: 77.2090 };
+        
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: defaultLocation,
+            zoom: 15,
+            zoomControl: true,
+            mapTypeControl: false,
+            streetViewControl: true,
+            fullscreenControl: true,
+            styles: [
+                {
+                    featureType: 'poi',
+                    stylers: [{ visibility: 'off' }]
+                }
+            ]
+        });
+        
+        // Custom marker icon
+        marker = new google.maps.Marker({
+            position: defaultLocation,
+            map: map,
+            title: 'Your Device Location',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                scaledSize: new google.maps.Size(40, 40)
+            },
+            animation: google.maps.Animation.DROP
+        });
+        
+        // Info window
+        const infoWindow = new google.maps.InfoWindow({
+            content: '<div style="padding:5px"><strong>📍 Your Phone</strong><br>Live location tracking</div>'
+        });
+        
+        marker.addListener('click', () => {
+            infoWindow.open(map, marker);
+        });
+    }
+
+    // ============================================
+    // FETCH LOCATION FROM FIREBASE
+    // ============================================
+    async function fetchLocation() {
+        if (!currentUsername) return;
+
+        try {
+            const snapshot = await database.ref('users/' + currentUsername).once('value');
+            const userData = snapshot.val();
+
+            if (userData && userData.lat && userData.lng) {
+                const lat = userData.lat;
+                const lng = userData.lng;
+                const lastUpdate = userData.lastUpdate;
+                const status = userData.status || "active";
+
+                // Update display
+                document.getElementById('displayLat').innerHTML = `${lat.toFixed(6)}°`;
+                document.getElementById('displayLng').innerHTML = `${lng.toFixed(6)}°`;
+                
+                if (lastUpdate) {
+                    const date = new Date(lastUpdate);
+                    const formattedTime = date.toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    document.getElementById('displayTime').innerHTML = formattedTime;
+                    
+                    // Check if location is recent (within 1 minute)
+                    const minutesAgo = (Date.now() - lastUpdate) / 60000;
+                    const statusDiv = document.getElementById('statusMessage');
+                    
+                    if (minutesAgo < 1) {
+                        statusDiv.className = 'status online';
+                        statusDiv.innerHTML = `✅ Online - Location updated ${Math.floor(minutesAgo * 60)} seconds ago`;
+                    } else if (minutesAgo < 5) {
+                        statusDiv.className = 'status online';
+                        statusDiv.innerHTML = `⚠️ Last update ${Math.floor(minutesAgo)} minutes ago`;
+                    } else {
+                        statusDiv.className = 'status offline';
+                        statusDiv.innerHTML = `❌ Offline - No update for ${Math.floor(minutesAgo)} minutes`;
+                    }
+                }
+
+                // Update map
+                const location = { lat: lat, lng: lng };
+                map.setCenter(location);
+                marker.setPosition(location);
+                
+                // Add bounce animation on refresh
+                marker.setAnimation(google.maps.Animation.BOUNCE);
+                setTimeout(() => {
+                    marker.setAnimation(null);
+                }, 1000);
+                
+                // Add accuracy circle
+                if (accuracyCircle) {
+                    accuracyCircle.setMap(null);
+                }
+                accuracyCircle = new google.maps.Circle({
+                    center: location,
+                    radius: 30,
+                    fillColor: '#2196F3',
+                    fillOpacity: 0.15,
+                    strokeColor: '#2196F3',
+                    strokeOpacity: 0.5,
+                    strokeWeight: 1,
+                    map: map
+                });
+                
+            } else {
+                const statusDiv = document.getElementById('statusMessage');
+                statusDiv.className = 'status offline';
+                statusDiv.innerHTML = '⚠️ Waiting for location data from device...';
+                document.getElementById('displayLat').innerHTML = 'Waiting...';
+                document.getElementById('displayLng').innerHTML = 'Waiting...';
+            }
+        } catch (error) {
+            console.error('Error fetching location:', error);
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = 'status offline';
+            statusDiv.innerHTML = '❌ Error fetching data. Check connection.';
+        }
+    }
+
+    // ============================================
+    // AUTO REFRESH
+    // ============================================
+    function startAutoRefresh() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+        
+        refreshInterval = setInterval(() => {
+            const autoRefreshCheckbox = document.getElementById('autoRefresh');
+            if (autoRefreshCheckbox && autoRefreshCheckbox.checked) {
+                fetchLocation();
+            }
+        }, 5000); // Every 5 seconds
+    }
+
+    // ============================================
+    // LOGOUT FUNCTION
+    // ============================================
+    function logout() {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+        }
+        
+        currentUsername = "";
+        document.getElementById('loginSection').style.display = 'block';
+        document.getElementById('dashboardSection').style.display = 'none';
+        document.getElementById('username').value = "";
+        document.getElementById('pin').value = "";
+        document.getElementById('loginError').style.display = "none";
+        
+        // Reset map
+        if (map) {
+            const defaultLocation = { lat: 28.6139, lng: 77.2090 };
+            map.setCenter(defaultLocation);
+            if (marker) marker.setPosition(defaultLocation);
+        }
+    }
+
+    // ============================================
+    // CHECK FOR SESSION (Optional)
+    // ============================================
+    // You can add session storage if needed
+</script>
+
+</body>
+</html>
