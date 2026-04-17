@@ -180,6 +180,23 @@
                 height: 300px;
             }
         }
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2196F3;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -223,27 +240,28 @@
             </div>
             <div id="map"></div>
             <div class="controls">
-                <button class="btn-refresh" onclick="fetchLocation()">🔄 Refresh</button>
+                <button class="btn-refresh" onclick="fetchLocation()">🔄 Refresh Now</button>
                 <button class="btn-logout" onclick="logout()">🚪 Logout</button>
             </div>
             <div class="auto-refresh">
                 <input type="checkbox" id="autoRefresh" checked>
-                <label>Auto refresh (5 sec)</label>
+                <label>Auto refresh every 5 seconds</label>
             </div>
-            <div id="statusMessage" class="status online">✅ Waiting for location...</div>
+            <div id="statusMessage" class="status online">✅ Connected - Waiting for location data</div>
         </div>
     </div>
 </div>
 
-<!-- Firebase SDK -->
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
-<!-- Google Maps API - REPLACE WITH YOUR KEY -->
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
-
+<!-- Google Maps API - NOTE: You need to add your own API key -->
+<!-- Get free API key from: https://console.cloud.google.com -->
 <script>
-    // 🔥 YOUR FIREBASE CONFIG (COPY FROM FIREBASE CONSOLE)
+    // ============================================
+    // 🔥 FIREBASE CONFIGURATION - YOUR DATA
+    // ============================================
     const firebaseConfig = {
         apiKey: "AIzaSyDJLDWlFVTJmvlirJSbFwVNq5oDFOt909Y",
         authDomain: "locateme-448db.firebaseapp.com",
@@ -256,11 +274,24 @@
     };
 
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    let database;
+    try {
+        firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        console.log("✅ Firebase connected successfully!");
+    } catch (error) {
+        console.error("❌ Firebase initialization error:", error);
+    }
 
-    let map, marker, refreshInterval, currentUsername = "";
+    // Global variables
+    let map = null;
+    let marker = null;
+    let refreshInterval = null;
+    let currentUsername = "";
 
+    // ============================================
+    // LOGIN FUNCTION
+    // ============================================
     async function login() {
         const username = document.getElementById('username').value.trim();
         const pin = document.getElementById('pin').value.trim();
@@ -268,12 +299,19 @@
 
         if (!username || !pin) {
             errorDiv.style.display = "block";
-            errorDiv.innerHTML = "Please enter username and PIN";
+            errorDiv.innerHTML = "❌ Please enter username and PIN";
+            return;
+        }
+
+        if (!database) {
+            errorDiv.style.display = "block";
+            errorDiv.innerHTML = "❌ Firebase not connected. Please check your internet connection.";
             return;
         }
 
         errorDiv.style.display = "block";
-        errorDiv.innerHTML = "Verifying...";
+        errorDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Verifying...</p></div>';
+        errorDiv.style.textAlign = "center";
 
         try {
             const snapshot = await database.ref('users/' + username).once('value');
@@ -284,70 +322,157 @@
                 document.getElementById('displayUsername').innerHTML = username;
                 document.getElementById('loginSection').style.display = 'none';
                 document.getElementById('dashboardSection').style.display = 'block';
+                
                 initMap();
                 await fetchLocation();
                 startAutoRefresh();
+                
                 errorDiv.style.display = "none";
             } else {
+                errorDiv.style.display = "block";
                 errorDiv.innerHTML = "❌ Invalid username or PIN";
+                errorDiv.style.textAlign = "center";
             }
         } catch (error) {
-            errorDiv.innerHTML = "❌ Error: " + error.message;
+            console.error("Login error:", error);
+            errorDiv.style.display = "block";
+            errorDiv.innerHTML = "❌ Connection error: " + error.message;
+            errorDiv.style.textAlign = "center";
         }
     }
 
+    // ============================================
+    // MAP FUNCTIONS
+    // ============================================
     function initMap() {
-        const defaultLoc = { lat: 28.6139, lng: 77.2090 };
+        const defaultLocation = { lat: 28.6139, lng: 77.2090 };
+        
+        // Check if Google Maps is loaded
+        if (typeof google === 'undefined') {
+            console.log("Waiting for Google Maps to load...");
+            setTimeout(initMap, 500);
+            return;
+        }
+        
         map = new google.maps.Map(document.getElementById('map'), {
-            center: defaultLoc,
-            zoom: 15
+            center: defaultLocation,
+            zoom: 15,
+            zoomControl: true,
+            mapTypeControl: false
         });
+        
         marker = new google.maps.Marker({
-            position: defaultLoc,
+            position: defaultLocation,
             map: map,
-            icon: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+            title: 'Your Device',
+            icon: {
+                url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                scaledSize: new google.maps.Size(40, 40)
+            }
         });
     }
 
+    // ============================================
+    // FETCH LOCATION FROM FIREBASE
+    // ============================================
     async function fetchLocation() {
-        if (!currentUsername) return;
+        if (!currentUsername || !database) return;
+
         try {
             const snapshot = await database.ref('users/' + currentUsername).once('value');
-            const data = snapshot.val();
-            if (data && data.lat && data.lng) {
-                const lat = data.lat, lng = data.lng;
+            const userData = snapshot.val();
+
+            if (userData && userData.lat && userData.lng) {
+                const lat = userData.lat;
+                const lng = userData.lng;
+                const lastUpdate = userData.lastUpdate;
+
                 document.getElementById('displayLat').innerHTML = lat.toFixed(6);
                 document.getElementById('displayLng').innerHTML = lng.toFixed(6);
-                if (data.lastUpdate) {
-                    document.getElementById('displayTime').innerHTML = new Date(data.lastUpdate).toLocaleString();
+                
+                if (lastUpdate) {
+                    const date = new Date(lastUpdate);
+                    document.getElementById('displayTime').innerHTML = date.toLocaleString('en-IN');
+                    
+                    const minutesAgo = (Date.now() - lastUpdate) / 60000;
+                    const statusDiv = document.getElementById('statusMessage');
+                    
+                    if (minutesAgo < 1) {
+                        statusDiv.className = 'status online';
+                        statusDiv.innerHTML = `✅ Online - Location updated ${Math.floor(minutesAgo * 60)} seconds ago`;
+                    } else if (minutesAgo < 5) {
+                        statusDiv.className = 'status online';
+                        statusDiv.innerHTML = `⚠️ Last update ${Math.floor(minutesAgo)} minutes ago`;
+                    } else {
+                        statusDiv.className = 'status offline';
+                        statusDiv.innerHTML = `❌ Offline - No update for ${Math.floor(minutesAgo)} minutes`;
+                    }
                 }
-                const pos = { lat: lat, lng: lng };
-                map.setCenter(pos);
-                marker.setPosition(pos);
-                document.getElementById('statusMessage').className = 'status online';
-                document.getElementById('statusMessage').innerHTML = '✅ Online - Location updated';
+
+                if (map && marker) {
+                    const location = { lat: lat, lng: lng };
+                    map.setCenter(location);
+                    marker.setPosition(location);
+                    
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
+                    setTimeout(() => marker.setAnimation(null), 1000);
+                }
+            } else {
+                document.getElementById('statusMessage').className = 'status offline';
+                document.getElementById('statusMessage').innerHTML = '⚠️ Waiting for location data from device...';
             }
         } catch (error) {
-            document.getElementById('statusMessage').innerHTML = '❌ Error fetching location';
+            console.error('Fetch error:', error);
+            document.getElementById('statusMessage').className = 'status offline';
+            document.getElementById('statusMessage').innerHTML = '❌ Error fetching data';
         }
     }
 
+    // ============================================
+    // AUTO REFRESH
+    // ============================================
     function startAutoRefresh() {
         if (refreshInterval) clearInterval(refreshInterval);
+        
         refreshInterval = setInterval(() => {
-            if (document.getElementById('autoRefresh').checked) fetchLocation();
+            const autoRefresh = document.getElementById('autoRefresh');
+            if (autoRefresh && autoRefresh.checked) {
+                fetchLocation();
+            }
         }, 5000);
     }
 
+    // ============================================
+    // LOGOUT FUNCTION
+    // ============================================
     function logout() {
-        if (refreshInterval) clearInterval(refreshInterval);
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+            refreshInterval = null;
+        }
+        
         currentUsername = "";
         document.getElementById('loginSection').style.display = 'block';
         document.getElementById('dashboardSection').style.display = 'none';
         document.getElementById('username').value = "";
         document.getElementById('pin').value = "";
+        document.getElementById('loginError').style.display = "none";
     }
+
+    // Check if everything is loaded
+    window.addEventListener('load', function() {
+        console.log("✅ Website loaded successfully");
+        if (database) {
+            console.log("✅ Firebase is ready");
+        } else {
+            console.log("❌ Firebase not initialized");
+        }
+    });
 </script>
+
+<!-- Google Maps API - You need to add your API key here -->
+<!-- Get free API key from: https://console.cloud.google.com -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE"></script>
 
 </body>
 </html>
